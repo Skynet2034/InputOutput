@@ -1,4 +1,5 @@
 import java.io.*;
+import java.text.DecimalFormat;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,8 +31,8 @@ private static void readPage(RandomAccessFile file, long pageNumber, long pagesT
 }
 private static void printInfo(File fileName, long pageCurrent, long pagesTotal)
 {
-    if (pageCurrent==-1) pageCurrent=0;
-    System.out.println("File name - "+fileName.getName()+" page "+(pageCurrent+1)+" of "+(pagesTotal+1));
+    //if (pageCurrent==-1) pageCurrent=0;
+    System.out.println("File name - "+fileName.getName()+" page "+(pageCurrent)+" of "+(pagesTotal+1));
     System.out.println("Press N for next page, P for previous page, X for exit or enter page number");
 }
     public static void main(String[] args) {
@@ -42,14 +43,14 @@ exit:
         try (RandomAccessFile file=new RandomAccessFile(fileName,"r"); Scanner in=new Scanner(System.in)) {
             long length = file.length();
             long pagesTotal = length / PAGE_SIZE;
-            long pageCurrent = -1;
-            System.out.printf("File loaded in "+(System.currentTimeMillis()-start)+" milliseconds");
-            System.out.println();
+            long pageCurrent = 0;
+            System.out.println("File loaded in "+(System.currentTimeMillis()-start)+" milliseconds");
+            DecimalFormat formatter=new DecimalFormat("###.##");
+            String fileSizeMB=formatter.format((double)length/(1024*1024));
+            System.out.println("File size - "+fileSizeMB+" MB");
             while (true) {
+                pageCurrent = file.getFilePointer() / PAGE_SIZE;
                 printInfo(fileName, pageCurrent, pagesTotal);
-                long position = file.getFilePointer();
-               //readPage(file,pageCurrent, pagesTotal);
-                String page;
                 String input = in.nextLine().trim().toLowerCase();
                 if (input.matches("[0-9]+")) {
                     int pageNumber = Integer.valueOf(input)-1;
@@ -57,13 +58,16 @@ exit:
                     } else if ((input.matches("[npx]")) && (input.length() == 1)) {
                     char tmp = input.charAt(0);
                     switch (tmp) {
-                        case 'n': {readPage(file, pageCurrent + 1, pagesTotal); break;}
-                        case 'p':{readPage(file, pageCurrent - 1, pagesTotal); break;}
+                        case 'n': {readPage(file, pageCurrent, pagesTotal); break;}
+                        case 'p':{
+                            int offset=2;
+                            if (pageCurrent==pagesTotal) offset=1;
+                            readPage(file, pageCurrent - offset, pagesTotal); break;}
                         case 'x': break exit;
                              }
                 }
                 else System.out.println("Bad command");
-                 pageCurrent = file.getFilePointer() / PAGE_SIZE;
+
             }
 
         }
